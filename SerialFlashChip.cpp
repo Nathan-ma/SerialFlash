@@ -30,6 +30,9 @@
 
 #define CSASSERT()  DIRECT_WRITE_LOW(cspin_basereg, cspin_bitmask)
 #define CSRELEASE() DIRECT_WRITE_HIGH(cspin_basereg, cspin_bitmask)
+#ifdef ARDUINO_ARCH_ESP32
+#define SPICONFIG   SPISettings(26000000, MSBFIRST, SPI_MODE0)
+#else
 #define SPICONFIG   SPISettings(50000000, MSBFIRST, SPI_MODE0)
 
 uint16_t SerialFlashChip::dirindex = 0;
