@@ -73,13 +73,25 @@ private:
 extern SerialFlashChip SerialFlash;
 
 
-class SerialFlashFile
+class SerialFlashFile : public Stream
 {
 public:
-	constexpr SerialFlashFile() { }
+	SerialFlashFile() : address(0) {
+	}
 	operator bool() {
 		if (address > 0) return true;
 		return false;
+	}
+	virtual int read() {
+		byte b;
+		if (read(&b, sizeof(b)) == 0) return -1;
+		return b;
+	}
+	virtual int peek() {
+		byte b;
+		if (offset >= length) return -1;
+		SerialFlash.read(address + offset, &b, sizeof(b));
+		return b;
 	}
 	uint32_t read(void *buf, uint32_t rdlen) {
 		if (offset + rdlen > length) {
@@ -89,6 +101,12 @@ public:
 		SerialFlash.read(address + offset, buf, rdlen);
 		offset += rdlen;
 		return rdlen;
+	}
+	virtual size_t write(uint8_t b) {
+		return write(&b, sizeof(b));
+	}
+	virtual size_t write(const uint8_t *buffer, size_t size) {
+		return write((const void*)buffer, size);
 	}
 	uint32_t write(const void *buf, uint32_t wrlen) {
 		if (offset + wrlen > length) {
@@ -108,12 +126,12 @@ public:
 	uint32_t size() {
 		return length;
 	}
-	uint32_t available() {
+	virtual int available() {
 		if (offset >= length) return 0;
 		return length - offset;
 	}
 	void erase();
-	void flush() {
+	virtual void flush() {
 	}
 	void close() {
 	}
@@ -122,10 +140,10 @@ public:
 	}
 protected:
 	friend class SerialFlashChip;
-	uint32_t address = 0;  // where this file's data begins in the Flash, or zero
-	uint32_t length = 0;   // total length of the data in the Flash chip
-	uint32_t offset = 0; // current read/write offset in the file
-	uint16_t dirindex = 0;
+	uint32_t address;  // where this file's data begins in the Flash, or zero
+	uint32_t length;   // total length of the data in the Flash chip
+	uint32_t offset; // current read/write offset in the file
+	uint16_t dirindex;
 };
 
 
